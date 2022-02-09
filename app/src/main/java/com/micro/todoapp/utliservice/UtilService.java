@@ -1,4 +1,4 @@
-package com.micro.todoapp.utlisService;
+package com.micro.todoapp.utliservice;
 
 import android.app.Activity;
 import android.content.Context;

@@ -2,6 +2,7 @@ package com.micro.todoapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -34,70 +35,71 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RegisterActivity extends AppCompatActivity {
-
-    private MaterialButton loginBtn,registerBtn;
-    EditText username_et,email_et,password_et;
+public class LoginActivity extends AppCompatActivity {
+    MaterialButton registerBtn,loginBtn;
+    EditText email_et,password_et;
     ProgressBar progressBar;
     UtilService utilService;
+    private String email;
+    private String password;
     SharedPreference sharedPreference;
-    private String username,email,password;
+
     @Override
     protected void onCreate (Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register);
+        setContentView(R.layout.activity_login);
+        registerBtn = (MaterialButton)findViewById(R.id.log_register_bt);
+        loginBtn =(MaterialButton)findViewById(R.id.log_login_bt);
+        email_et = (EditText)findViewById(R.id.log_email_et);
+        password_et =(EditText)findViewById(R.id.log_password_et);
 
-        loginBtn =(MaterialButton)findViewById(R.id.login_bt);
-        registerBtn =(MaterialButton)findViewById(R.id.reg_register_bt);
-        username_et = (EditText) findViewById(R.id.reg_username_et);
-        email_et = (EditText)findViewById(R.id.reg_email_et);
-        password_et =(EditText)findViewById(R.id.reg_password_et);
-        sharedPreference = new SharedPreference(this);
         utilService = new UtilService();
-        progressBar =(ProgressBar)findViewById(R.id.reg_progress_bar);
-
+        progressBar =(ProgressBar)findViewById(R.id.log_progress_bar);
+        sharedPreference = new SharedPreference(this);
+        progressBar.setVisibility(View.GONE);
         registerBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick (View view) {
-                utilService.hideKeyboard(view,RegisterActivity.this);
-                username = username_et.getText().toString();
-                email = email_et.getText().toString();
-                password = password_et.getText().toString();
-
-                registerUser(view);
-            }
-        });
-
-
-        loginBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick (View view) {
-                Intent intent = new Intent(RegisterActivity.this,LoginActivity.class);
+                Intent intent = new Intent(LoginActivity.this,RegisterActivity.class);
                 startActivity(intent);
             }
         });
 
 
+        loginBtn.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick (View view) {
+                email = email_et.getText().toString();
+                password = password_et.getText().toString();
+                Toast.makeText(LoginActivity.this, "Logging .....", Toast.LENGTH_SHORT).show();
+            loginUser(view);
+            }
+        });
+
+
+
+
     }
 
-    private void registerUser (View view) {
+    private void loginUser (View view) {
         progressBar.setVisibility(View.VISIBLE);
 
         HashMap<String,String> params = new HashMap<>();
-        params.put("username",username);
         params.put("email",email);
         params.put("password",password);
 
-        String apikey ="https://todo-application231.herokuapp.com/api/todo/auth/register";
+        String apikey ="https://todo-application231.herokuapp.com/api/todo/auth/login";
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, apikey, new JSONObject(params), new Response.Listener<JSONObject>() {
             @Override
             public void onResponse (JSONObject response) {
                 try {
-                    if(response.getBoolean("sucess")){
+                    if(response.getBoolean("success")){
                         String token = response.getString("token");
                         sharedPreference.setValueString("token",token);
-                        startActivity(new Intent(RegisterActivity.this,HomeActivity.class));
+                        Toast.makeText(getApplicationContext(), token, Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(LoginActivity.this,HomeActivity.class));
                     }
                     progressBar.setVisibility(View.GONE);
                 } catch (JSONException e) {
@@ -111,8 +113,8 @@ public class RegisterActivity extends AppCompatActivity {
                 if(error instanceof ServerError && response!= null){
                     try {
                         String res = new String(response.data, HttpHeaderParser.parseCharset(response.headers,"utf-8"));
-                        JSONObject  obj = new JSONObject(res);
-                        Toast.makeText(RegisterActivity.this, obj.getString("msg"), Toast.LENGTH_SHORT).show();
+                        JSONObject obj = new JSONObject(res);
+                        Toast.makeText(LoginActivity.this, obj.getString("msg"), Toast.LENGTH_SHORT).show();
                         Log.d("taggg",obj.getString("msg"));
                         progressBar.setVisibility(View.GONE);
                     }catch (JSONException | UnsupportedEncodingException js){
@@ -131,13 +133,13 @@ public class RegisterActivity extends AppCompatActivity {
             }
         };
 
-
+        //set retry policy
         int socketTime = 3000;
         RetryPolicy retryPolicy = new DefaultRetryPolicy(socketTime,DefaultRetryPolicy.DEFAULT_MAX_RETRIES,DefaultRetryPolicy.DEFAULT_BACKOFF_MULT);
 
         jsonObjectRequest.setRetryPolicy(retryPolicy);
 
-
+            //request add
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(jsonObjectRequest);
     }
@@ -145,14 +147,10 @@ public class RegisterActivity extends AppCompatActivity {
     @Override
     protected void onStart () {
         super.onStart();
-        SharedPreferences userPref = getSharedPreferences("todo_user",MODE_PRIVATE);
+        SharedPreferences userPref= getSharedPreferences("todo_user", MODE_PRIVATE);
         if(userPref.contains("token")){
-            startActivity(new Intent(RegisterActivity.this,HomeActivity.class));
+            startActivity(new Intent(LoginActivity.this,HomeActivity.class));
             finish();
         }
     }
-
-
-    //TODO change the name of json key to success
-    //TODO validation of register user
 }
